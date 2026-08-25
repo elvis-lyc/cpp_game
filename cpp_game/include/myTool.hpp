@@ -1,4 +1,177 @@
-﻿
-namespace myTool {
+﻿#pragma once
 
+#include <source_location>
+#include <string>
+namespace myTool {
+	class CursorBox {
+	private:
+		short _positionX = 0, _positionY = 0, _eventX = 0, _eventY = 0;
+		/*
+		Bitset
+		0~4: _state, _oneClick, _doubleClick, _leftPressed, _rightPressed
+		*/
+		char _bit8 = 0;
+	public:
+		bool getState() const;
+		bool getOneClick() const;
+		bool getDoubleClick() const;
+		bool getLeftPressed() const;
+		bool getRightPressed() const;
+		void set(const bool state, const bool oneClk, const bool douClk,
+			const bool lPre, const bool rPre);
+		short getPositionX() const;
+		short getPositionY() const;
+		short getEventX() const;
+		short getEventY() const;
+		void setPosition(const short x, const short y);
+		void setEvent(const short x, const short y);
+	};
+	inline CursorBox cursorBox;
+
+	/*
+	自訂斷言
+	傳入條件，條件為 False 時中止程序
+	*/
+	void myAssert(const bool condition, const std::source_location& loc = std::source_location::current());
+
+	/*
+	設定 Cmd 光標位置
+	傳入值為空:(x,y)=>(0,0)
+	*/
+	void setCursorXY(const short x = 0, const short y = 0);
+
+	/*
+	設定 Cmd 光標輸出顏色
+	傳入值為空:(c)=>7(白色)
+	*/
+	void setCursorColor(const short colorIndex = 7);
+
+	/*
+	設定 Cmd 光標位置與輸出顏色
+	傳入值為空:(x,y)=>(0,0) (c)=>7(白色)
+	*/
+	void setCursorXYC(const short x = 0, const short y = 0, const short colorIndex = 7);
+
+	/*
+	輸出文字
+	*/
+	void myCout(const std::string& text);
+
+	/*
+	改變位置後輸出文字
+	傳入值為空:(x,y)=>(0,0)
+	*/
+	void myCout(const std::string& text, const short x, const short y);
+
+	/*
+	改變位置與輸出顏色後輸出文字
+	傳入值為空:(x,y)=>(0,0) (c)=>7(白色)
+	*/
+	void myCout(const std::string& text, const short x, const short y, const short colorIndex);
+
+	/*
+	當光標在矩形範圍內時回傳true
+	x、y: 為起始格
+	countX、countY:為在起始格的基礎上向該方向再延長數格
+	*/
+	bool cursorAtArea(const short x, const short y, const short countX, const short countY);
+
+	/*
+	當光標在矩形範圍內時回傳true
+	x、y: 為起始格
+	countX、countY:為在起始格的基礎上向該方向再延長數格
+	*/
+	bool cursorAtArea(const short x, const short y, const short countX, const short countY);
+
+	/*
+	當光標在矩形範圍內點擊時回傳true
+	x、y: 為起始格
+	countX、countY:為在起始格的基礎上向該方向再延長數格
+	*/
+	bool cursorTouchArea(const short x, const short y, const short countX, const short countY);
+
+	/*
+	當鼠標在
+	x、y: 為起始格
+	countX、countY:為在起始格的基礎上向該方向再延長數格
+	的矩形範圍內時
+	將name顏色設為changeColor
+	反之設為白色(7)
+	*/
+	void colorChangeLayout(const std::string& name,
+		const short x, const short y, const short countX, const short countY,
+		const short changeColor);
+
+	/*
+	停滯 ms 毫秒
+	*/
+	void mySleep(const int ms);
+
+	/*
+	從 firstNum ~ endNum 中隨機返回一數字
+	*/
+	int myRand(const int firstNum, const int endNum);
+
+	/*
+	以矩形範圍的空格字元清空畫面
+	x、y: 為起始格
+	countX、countY:為在起始格的基礎上向該方向再延長數格
+	firstOrEndNumUse: 使用system("cls"){會造成監聽功能失效，應只在程式的開頭與結尾使用}
+	*/
+	void clearCmd(const short x, const short y, const short countX, const short countY, const bool firstOrEndUse = false);
+
+	/*
+	設定 Cmd 頁面名稱
+	*/
+	void setCmdTitle(const std::wstring& name);
+
+	/*
+	設定光標是否能看見
+	能看見:true 隱藏:false
+	*/
+	void setCursorState(const bool canSee);
+
+	/*
+	開啟負責監聽滑鼠狀態的執行緒
+	*/
+	void startCursor();
+
+	/*
+	結束負責監聽滑鼠狀態的執行緒
+	*/
+	void endCursor();
+
+	/*
+	將監聽到的滑鼠資訊導入到 myTool::CursorBox cursorBox 的類中
+	*/
+	void getCursor();
+
+	/*
+	重滑鼠狀態紀錄
+	*/
+	void resetCursor();
+
+	/*
+	開啟負責監聽鍵盤狀態的執行緒
+	*/
+	void startKeyInput();
+
+	/*
+	結束負責監聽鍵盤狀態的執行緒
+	*/
+	void endKeyInput();
+
+	/*
+	讀取相應按鍵是否被按下(只記錄最後一個按下的)
+	已收錄:
+	ESC: 0x1B, Space: 0x20, LShift: 0xA0,
+	Up: 0x26, Right: 0c27, Down: 0x28, Left: 0x25,
+	W: 'W', D: 'D', S: 'S', A: 'A'
+	*/
+	bool getKeyInput(const int vKey);
+
+	/*
+	重製鍵盤狀態紀錄
+	*/
+	void resetKeyInput();
 }
