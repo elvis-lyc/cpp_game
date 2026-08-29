@@ -182,6 +182,8 @@ namespace snake {
 					_tree.insert(randIndex);
 					_remainingIndex--;
 				}
+
+				myTool::resetKeyInput();
 			}
 
 			bool willGameOver(const short num) const{
@@ -282,9 +284,20 @@ namespace snake {
 				else {
 					waitTime = setting.getMoveWaitTime();
 				}
+				if (myTool::getKeyInput(0x20)) {
+					myTool::mySleep(200);
+					while (true) {
+						myTool::resetKeyInput();
+						myTool::mySleep(200);
+						if (myTool::getKeyInput(0x20)) {
+							myTool::mySleep(200);
+							break;
+						}
+					}
+				}
 				myTool::resetKeyInput();
 				myTool::mySleep(waitTime);
-				if (myTool::getKeyInput('0x1B')) {
+				if (myTool::getKeyInput(0x1B)) {
 					willGameOver(1);
 					return false;
 				}
@@ -307,19 +320,19 @@ namespace snake {
 					}
 				}
 				else {
-					if (myTool::getKeyInput('0x26') && _yMove != 1) {
+					if (myTool::getKeyInput(0x26) && _yMove != 1) {
 						_xMove = 0;
 						_yMove = -1;
 					}
-					else if (myTool::getKeyInput('0x27') && _xMove != -1) {
+					else if (myTool::getKeyInput(0x27) && _xMove != -1) {
 						_xMove = 1;
 						_yMove = 0;
 					}
-					else if (myTool::getKeyInput('0x28') && _yMove != -1) {
+					else if (myTool::getKeyInput(0x28) && _yMove != -1) {
 						_xMove = 0;
 						_yMove = 1;
 					}
-					else if (myTool::getKeyInput('0x25') && _xMove != 1) {
+					else if (myTool::getKeyInput(0x25) && _xMove != 1) {
 						_xMove = -1;
 						_yMove = 0;
 					}
