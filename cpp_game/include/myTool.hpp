@@ -3,6 +3,23 @@
 #include <source_location>
 #include <string>
 namespace myTool {
+	class Tree {
+	private:
+		struct Node {
+			short data = 0;
+			Node* left = nullptr, * right = nullptr;
+			Node(const short inData):data(inData){}
+		};
+		Node* _root = nullptr;
+		void deleteTree_temp(Tree::Node* node);
+		void findCanUseIndex_temp(Tree::Node* node, short& index);
+	public:
+		void insert(const short data);
+		void remove(const short data);
+		void deleteTree();
+		void findCanUseIndex(short& index);
+	};
+
 	class CursorBox {
 	private:
 		short _positionX = 0, _positionY = 0, _eventX = 0, _eventY = 0;
@@ -91,9 +108,10 @@ namespace myTool {
 	bool cursorTouchArea(const short x, const short y, const short countX, const short countY);
 
 	/*
-	當鼠標在
+	在(x,y)輸出name
+	當鼠標在{
 	x、y: 為起始格
-	countX、countY:為在起始格的基礎上向該方向再延長數格
+	countX、countY:為在起始格的基礎上向該方向再延長數格}
 	的矩形範圍內時
 	將name顏色設為changeColor
 	反之設為白色(7)
@@ -162,7 +180,7 @@ namespace myTool {
 	void endKeyInput();
 
 	/*
-	讀取相應按鍵是否被按下(只記錄最後一個按下的)
+	讀取相應按鍵是否被按下
 	已收錄:
 	ESC: 0x1B, Space: 0x20, LShift: 0xA0,
 	Up: 0x26, Right: 0c27, Down: 0x28, Left: 0x25,
