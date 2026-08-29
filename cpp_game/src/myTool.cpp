@@ -174,7 +174,6 @@ namespace myTool {
 			*/
 			void set(const short index) {
 				myAssert(0 <= index || index <= 10);
-				reset();
 				_bit16.store(_bit16.load() | (1 << index));
 			}
 			void reset() {
@@ -239,13 +238,13 @@ namespace myTool {
 				if (GetAsyncKeyState(0x1B) & 0x8000) {
 					keyInpBit.set(0);
 				}
-				else if (GetAsyncKeyState(0x20) & 0x8000) {
+				if (GetAsyncKeyState(0x20) & 0x8000) {
 					keyInpBit.set(1);
 				}
-				else if (GetAsyncKeyState(0xA1) & 0x8000) {
+				if (GetAsyncKeyState(0xA0) & 0x8000) {
 					keyInpBit.set(2);
 				}
-				else if (GetAsyncKeyState(0x26) & 0x8000) {
+				if (GetAsyncKeyState(0x26) & 0x8000) {
 					keyInpBit.set(3);
 				}
 				else if (GetAsyncKeyState(0x27) & 0x8000) {
@@ -257,7 +256,7 @@ namespace myTool {
 				else if (GetAsyncKeyState(0x25) & 0x8000) {
 					keyInpBit.set(6);
 				}
-				else if (GetAsyncKeyState('W') & 0x8000) {
+				if (GetAsyncKeyState('W') & 0x8000) {
 					keyInpBit.set(7);
 				}
 				else if (GetAsyncKeyState('D') & 0x8000) {
@@ -270,6 +269,165 @@ namespace myTool {
 					keyInpBit.set(10);
 				}
 			}
+		}
+	}
+
+	void Tree::insert(const short data) {
+		if (_root == nullptr) {
+			_root = new Node(data);
+			return;
+		}
+
+		Node* temp = _root;
+		while (true) {
+			if (data < temp->data) {
+				if (temp->left != nullptr) {
+					temp = temp->left;
+				}
+				else {
+					temp->left = new Node(data);
+					return;
+				}
+			}
+			else if (temp->data < data) {
+				if (temp->right != nullptr) {
+					temp = temp->right;
+				}
+				else {
+					temp->right = new Node(data);
+					return;
+				}
+			}
+			else if (data == temp->data) {
+				return;
+			}
+		}
+	}
+	void Tree::remove(const short data) {
+		if (_root == nullptr) {
+			return;
+		}
+		
+		Node* temp = _root,* node = nullptr;
+		while (true) {
+			if (data < temp->data) {
+				if (temp->left != nullptr) {
+					if (temp->left->left != nullptr ||
+						temp->left->right != nullptr) {
+						temp = temp->left;
+					}
+					else {
+						if (temp->left->data == data) {
+							delete(temp->left);
+							temp->left = nullptr;
+						}
+						else {
+							return;
+						}
+					}
+				}
+				else {
+					return;
+				}
+			}
+			else if (temp->data < data) {
+				if (temp->right != nullptr) {
+					if (temp->right->left != nullptr ||
+						temp->right->right != nullptr) {
+						temp = temp->right;
+					}
+					else {
+						if (temp->right->data == data) {
+							delete(temp->right);
+							temp->right = nullptr;
+						}
+						else {
+							return;
+						}
+					}
+				}
+				else {
+					return;
+				}
+			}
+			else if (data == temp->data) {
+				node = temp;
+				if (temp->left != nullptr) {
+					temp = temp->left;
+					if (temp->right != nullptr) {
+						while (temp->right->right != nullptr) {
+							temp = temp->right;
+						}
+						node->data = temp->right->data;
+						Node* temp_temp = temp->right;
+						temp->right = temp->right->left;
+						delete(temp_temp);
+						return;
+					}
+					else {
+						node->data = temp->data;
+						node->left = temp->left;
+						delete(temp);
+						return;
+					}
+				}
+				else if (temp->right != nullptr) {
+					temp = temp->right;
+					if (temp->left != nullptr) {
+						while (temp->left->left != nullptr) {
+							temp = temp->left;
+						}
+						node->data = temp->left->data;
+						Node* temp_temp = temp->left;
+						temp->left = temp->left->right;
+						delete(temp_temp);
+						return;
+					}
+					else {
+						node->data = temp->data;
+						node->right = temp->right;
+						delete(temp);
+						return;
+					}
+				}
+				else {
+					myTool::myAssert(false);
+					return;
+				}
+			}
+		}
+	}
+	void Tree::deleteTree_temp(Tree::Node* node) {
+		if (node != nullptr) {
+			deleteTree_temp(node->left);
+			deleteTree_temp(node->right);
+			delete(node);
+		}
+	}
+	void Tree::deleteTree() {
+		if (_root != nullptr) {
+			deleteTree_temp(_root->left);
+			deleteTree_temp(_root->right);
+			delete(_root);
+			_root = nullptr;
+		}
+	}
+	void Tree::findCanUseIndex_temp(Tree::Node* node, short& index) {
+		if(node != nullptr) {
+			findCanUseIndex_temp(node->left, index);
+			if (node->data <= index) {
+				index++;
+			}
+			findCanUseIndex_temp(node->right, index);
+		}
+	}
+	void Tree::findCanUseIndex(short& index) {
+		if (_root != nullptr) {
+			findCanUseIndex_temp(_root->left, index);
+			if (_root->data <= index) {
+				index++;
+			}
+			findCanUseIndex_temp(_root->right, index);
 		}
 	}
 
