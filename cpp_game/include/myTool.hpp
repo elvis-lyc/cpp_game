@@ -2,7 +2,14 @@
 
 #include <source_location>
 #include <string>
+#include <limits>
 namespace myTool {
+	struct Point {
+		short x = 0, y = 0;
+		Point() = default;
+		Point(const short inX, const short inY) :x(inX), y(inY) {}
+	};
+
 	class Tree {
 	private:
 		struct Node {
@@ -22,7 +29,7 @@ namespace myTool {
 
 	class CursorBox {
 	private:
-		short _positionX = 0, _positionY = 0, _eventX = 0, _eventY = 0;
+		Point _position{ 0,0 }, _event{ 0,0 };
 		/*
 		Bitset
 		0~4: _state, _oneClick, _doubleClick, _leftPressed, _rightPressed
@@ -40,8 +47,8 @@ namespace myTool {
 		short getPositionY() const;
 		short getEventX() const;
 		short getEventY() const;
-		void setPosition(const short x, const short y);
-		void setEvent(const short x, const short y);
+		void setPosition(const Point point);
+		void setEvent(const Point point);
 	};
 	inline CursorBox cursorBox;
 
@@ -49,13 +56,20 @@ namespace myTool {
 	自訂斷言
 	傳入條件，條件為 False 時中止程序
 	*/
-	void myAssert(const bool condition, const std::source_location& loc = std::source_location::current());
+	void myAssert(const bool condition, const std::string& errorText,
+		const std::source_location& loc = std::source_location::current());
+
+	/*
+	自訂static_cast並加入條件判斷
+	*/
+	template<typename T, typename F>
+	T safe_cast(F value);
 
 	/*
 	設定 Cmd 光標位置
 	傳入值為空:(x,y)=>(0,0)
 	*/
-	void setCursorXY(const short x = 0, const short y = 0);
+	void setCursorXY(const Point point);
 
 	/*
 	設定 Cmd 光標輸出顏色
@@ -67,7 +81,7 @@ namespace myTool {
 	設定 Cmd 光標位置與輸出顏色
 	傳入值為空:(x,y)=>(0,0) (c)=>7(白色)
 	*/
-	void setCursorXYC(const short x = 0, const short y = 0, const short colorIndex = 7);
+	void setCursorXYC(const Point point, const short colorIndex = 7);
 
 	/*
 	輸出文字
@@ -78,34 +92,34 @@ namespace myTool {
 	改變位置後輸出文字
 	傳入值為空:(x,y)=>(0,0)
 	*/
-	void myCout(const std::string& text, const short x, const short y);
+	void myCout(const std::string& text, const Point point);
 
 	/*
 	改變位置與輸出顏色後輸出文字
 	傳入值為空:(x,y)=>(0,0) (c)=>7(白色)
 	*/
-	void myCout(const std::string& text, const short x, const short y, const short colorIndex);
+	void myCout(const std::string& text, const Point point, const short colorIndex);
 
 	/*
 	當光標在矩形範圍內時回傳true
 	x、y: 為起始格
 	countX、countY:為在起始格的基礎上向該方向再延長數格
 	*/
-	bool cursorAtArea(const short x, const short y, const short countX, const short countY);
+	bool cursorAtArea(const Point point, const Point countPoint);
 
 	/*
 	當光標在矩形範圍內時回傳true
 	x、y: 為起始格
 	countX、countY:為在起始格的基礎上向該方向再延長數格
 	*/
-	bool cursorAtArea(const short x, const short y, const short countX, const short countY);
+	bool cursorAtArea(const Point point, const Point countPoint);
 
 	/*
 	當光標在矩形範圍內點擊時回傳true
 	x、y: 為起始格
 	countX、countY:為在起始格的基礎上向該方向再延長數格
 	*/
-	bool cursorTouchArea(const short x, const short y, const short countX, const short countY);
+	bool cursorTouchArea(const Point point, const Point countPoint);
 
 	/*
 	在(x,y)輸出name
@@ -117,7 +131,7 @@ namespace myTool {
 	反之設為白色(7)
 	*/
 	void colorChangeLayout(const std::string& name,
-		const short x, const short y, const short countX, const short countY,
+		const Point point, const Point countPoint,
 		const short changeColor);
 
 	/*
@@ -136,7 +150,7 @@ namespace myTool {
 	countX、countY:為在起始格的基礎上向該方向再延長數格
 	firstOrEndNumUse: 使用system("cls"){會造成監聽功能失效，應只在程式的開頭與結尾使用}
 	*/
-	void clearCmd(const short x, const short y, const short countX, const short countY, const bool firstOrEndUse = false);
+	void clearCmd(const Point point, const Point countPoint, const bool firstOrEndUse = false);
 
 	/*
 	設定 Cmd 頁面名稱
@@ -192,4 +206,13 @@ namespace myTool {
 	重製鍵盤狀態紀錄
 	*/
 	void resetKeyInput();
+
+	/*
+	safe_cast實作
+	*/
+	template<typename T, typename F>
+	T safe_cast(F value) {
+		myTool::myAssert(std::numeric_limits<T>::min() <= value && value <= std::numeric_limits<T>::max(), "值溢出，無法進行型別轉換");
+		return static_cast<T>(value);
+	}
 }
