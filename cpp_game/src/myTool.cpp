@@ -17,9 +17,9 @@ namespace myTool {
 			static HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 			return hOut;
 		}
-		[[noreturn]] void reportFailure(const std::source_location& loc) {
+		[[noreturn]] void reportFailure(const std::string& errorText, const std::source_location& loc) {
 			std::cerr << "\n##----------##"
-				<< "\nError_Info:"
+				<< "\nError_Info:" + errorText
 				<< "\nFunc_Name: " << loc.function_name()
 				<< "\nLine: " << loc.line()
 				<< "\nColumn: " << loc.column()
@@ -29,7 +29,7 @@ namespace myTool {
 
 		class CursorBitset {
 		private:
-			short _positionX = 0, _positionY = 0, _eventX = 0, _eventY = 0;
+			Point _position{ 0,0 }, _event{ 0,0 };
 			/*
 			Bitset
 			0~4: _state, _oneClick, _doubleClick, _leftPressed, _rightPressed
@@ -38,10 +38,8 @@ namespace myTool {
 		public:
 			CursorBitset() = default;
 			CursorBitset(const CursorBitset& other) {
-				_positionX = other._positionX;
-				_positionY = other._positionY;
-				_eventX = other._eventX;
-				_eventY = other._eventY;
+				_position = other._position;
+				_event = other._event;
 				_bit8.store(other._bit8.load());
 			}
 
@@ -102,29 +100,31 @@ namespace myTool {
 			}
 
 			short getPositionX() const{
-				return _positionX;
+				return _position.x;
 			}
 
 			short getPositionY() const{
-				return _positionY;
+				return _position.y;
 			}
 
 			short getEventX() const{
-				return _eventX;
+				return _event.x;
 			}
 
 			short getEventY() const{
-				return _eventY;
+				return _event.y;
 			}
-			void setPosition(const short x, const short y) {
-				myAssert(0 <= x && 0 <= y);
-				_positionX = x;
-				_positionY = y;
+			void setPosition(const Point point) {
+				myAssert(0 <= point.x && 0 <= point.y,
+					"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y));
+				_position.x = point.x;
+				_position.y = point.y;
 			}
-			void setEvent(const short x, const short y) {
-				myAssert(0 <= x && 0 <= y);
-				_eventX = x;
-				_eventY = y;
+			void setEvent(const Point point) {
+				myAssert(0 <= point.x && 0 <= point.y,
+					"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y));
+				_event.x = point.x;
+				_event.y = point.y;
 			}
 			
 			void reset() {
@@ -173,7 +173,8 @@ namespace myTool {
 			0~10 Esc, Space, LShift, Up, Right, Down, Left, W, D, S, A
 			*/
 			void set(const short index) {
-				myAssert(0 <= index || index <= 10);
+				myAssert(0 <= index || index <= 10,
+					"輸入值錯誤 index: " + std::to_string(index));
 				_bit16.store(_bit16.load() | (1 << index));
 			}
 			void reset() {
@@ -210,17 +211,17 @@ namespace myTool {
 						for (i = 0;i < recordNum;i++) {
 							if (irBox[i].EventType == MOUSE_EVENT) {
 								mer = irBox[i].Event.MouseEvent;
-								csrBit.setPosition(mer.dwMousePosition.X, mer.dwMousePosition.Y);
+								csrBit.setPosition({ mer.dwMousePosition.X, mer.dwMousePosition.Y });
 								if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED) {
 									csrBit.setState(true);
-									csrBit.setEvent(mer.dwMousePosition.X, mer.dwMousePosition.Y);
+									csrBit.setEvent({ mer.dwMousePosition.X, mer.dwMousePosition.Y });
 									csrBit.setLeftPressed(true);
 									csrBit.setRightPressed(false);
 									checkClickCount();
 								}
 								else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED) {
 									csrBit.setState(true);
-									csrBit.setEvent(mer.dwMousePosition.X, mer.dwMousePosition.Y);
+									csrBit.setEvent({ mer.dwMousePosition.X, mer.dwMousePosition.Y });
 									csrBit.setLeftPressed(false);
 									csrBit.setRightPressed(true);
 									checkClickCount();
@@ -390,10 +391,6 @@ namespace myTool {
 						return;
 					}
 				}
-				else {
-					myTool::myAssert(false);
-					return;
-				}
 			}
 		}
 	}
@@ -480,103 +477,118 @@ namespace myTool {
 		}
 	}
 	short CursorBox::getPositionX() const {
-		return _positionX;
+		return _position.x;
 	}
 	short CursorBox::getPositionY() const {
-		return _positionY;
+		return _position.y;
 	}
 	short CursorBox::getEventX() const {
-		return _eventX;
+		return _event.x;
 	}
 	short CursorBox::getEventY() const {
-		return _eventY;
+		return _event.y;
 	}
-	void CursorBox::setPosition(const short x, const short y) {
-		myAssert(0 <= x && 0 <= y);
-		_positionX = x;
-		_positionY = y;
+	void CursorBox::setPosition(const Point point) {
+		myAssert(0 <= point.x && 0 <= point.y,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y));
+		_position.x = point.x;
+		_position.y = point.y;
 	}
-	void CursorBox::setEvent(const short x, const short y) {
-		myAssert(0 <= x && 0 <= y);
-		_eventX = x;
-		_eventY = y;
+	void CursorBox::setEvent(const Point point) {
+		myAssert(0 <= point.x && 0 <= point.y,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y));
+		_event.x = point.x;
+		_event.y = point.y;
 	}
 
-	void myAssert(const bool condition, const std::source_location& loc) {
+	void myAssert(const bool condition, const std::string& errorText, const std::source_location& loc) {
 		if (!condition) [[unlikely]] {
-			reportFailure(loc);
+			reportFailure(errorText, loc);
 		}
 	}
-	void setCursorXY(const short x, const short y) {
-		myAssert(0 <= x && 0 <= y);
-		SetConsoleCursorPosition(getOutHandle(), COORD(x, y));
+	void setCursorXY(const Point point) {
+		myAssert(0 <= point.x && 0 <= point.y,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y));
+		SetConsoleCursorPosition(getOutHandle(), { point.x, point.y });
 	}
 	void setCursorColor(const short colorIndex) {
-		myAssert(0 <= colorIndex && colorIndex <= 255);
+		myAssert(0 <= colorIndex && colorIndex <= 255,
+			"輸入值錯誤 colorIndex: " + std::to_string(colorIndex));
 		SetConsoleTextAttribute(getOutHandle(), colorIndex);
 	}
-	void setCursorXYC(const short x, const short y, const short colorIndex) {
-		setCursorXY(x, y);
+	void setCursorXYC(const Point point, const short colorIndex) {
+		setCursorXY({ point.x, point.y });
 		setCursorColor(colorIndex);
 	}
 	void myCout(const std::string& text) {
 		std::cout << text;
 	}
-	void myCout(const std::string& text, const short x, const short y) {
-		setCursorXY(x, y);
+	void myCout(const std::string& text, const Point point) {
+		setCursorXY({ point.x, point.y });
 		myCout(text);
 	}
-	void myCout(const std::string& text, const short x, const short y, const short colorIndex) {
-		setCursorXYC(x, y, colorIndex);
+	void myCout(const std::string& text, const Point point, const short colorIndex) {
+		setCursorXYC({ point.x, point.y }, colorIndex);
 		myCout(text);
 	}
-	bool cursorAtArea(const short x, const short y, const short countX, const short countY) {
-		myAssert(0 <= x && 0 <= y && 0 <= countX && 0 <= countY);
-		if (x <= cursorBox.getPositionX() && cursorBox.getPositionX() <= x + countX &&
-			y <= cursorBox.getPositionY() && cursorBox.getPositionY() <= y + countY) {
+	bool cursorAtArea(const Point point, const Point countPoint) {
+		myAssert(0 <= point.x && 0 <= point.y && 0 <= countPoint.x && 0 <= countPoint.y,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y) +
+			"\n輸入值錯誤 countPoint.x: " + std::to_string(countPoint.x) + ", countPoint.y: " + std::to_string(countPoint.y));
+		if (point.x <= cursorBox.getPositionX() && cursorBox.getPositionX() <= point.x + countPoint.x &&
+			point.y <= cursorBox.getPositionY() && cursorBox.getPositionY() <= point.y + countPoint.y) {
 			return true;
 		}
 		return false;
 	}
-	bool cursorTouchArea(const short x, const short y, const short countX, const short countY) {
-		myAssert(0 <= x && 0 <= y && 0 <= countX && 0 <= countY);
-		if (x <= cursorBox.getEventX() && cursorBox.getEventX() <= x + countX &&
-			y <= cursorBox.getEventY() && cursorBox.getEventY() <= y + countY) {
+	bool cursorTouchArea(const Point point, const Point countPoint) {
+		myAssert(0 <= point.x && 0 <= point.y && 0 <= countPoint.x && 0 <= countPoint.y,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y) +
+			"\n輸入值錯誤 countPoint.x: " + std::to_string(countPoint.x) + ", countPoint.y: " + std::to_string(countPoint.y));
+		if (point.x <= cursorBox.getEventX() && cursorBox.getEventX() <= point.x + countPoint.x &&
+			point.y <= cursorBox.getEventY() && cursorBox.getEventY() <= point.y + countPoint.y) {
 			return true;
 		}
 		return false;
 	}
 	void colorChangeLayout(const std::string& name,
-		const short x, const short y, const short countX, const short countY,
+		const Point point, const Point countPoint,
 		const short changeColor) {
-		myAssert(0 <= x && 0 <= y && 0 <= countX && 0 <= countY && 0 <= changeColor);
-		if (myTool::cursorAtArea(x, y, countX, countY)) {
-			myTool::myCout(name, x, y, changeColor);
+		myAssert(0 <= point.x && 0 <= point.y && 0 <= countPoint.x && 0 <= countPoint.y && 0 <= changeColor,
+			"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y) +
+			"\n輸入值錯誤 countPoint.x: " + std::to_string(countPoint.x) + ", countPoint.y: " + std::to_string(countPoint.y) +
+			"\n輸入值錯誤 changeColor: " + std::to_string(changeColor));
+		if (myTool::cursorAtArea({ point.x, point.y }, { countPoint.x, countPoint.y })) {
+			myTool::myCout(name, { point.x, point.y }, changeColor);
 		}
 		else {
-			myTool::myCout(name, x, y, 7);
+			myTool::myCout(name, { point.x, point.y }, 7);
 		}
 	}
 	void mySleep(const int ms) {
-		myAssert(0 <= ms);
+		myAssert(0 <= ms,
+			"輸入值錯誤 ms: " + std::to_string(ms));
 		std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 	}
 	int myRand(const int firstNum, const int endNum) {
 		static std::random_device rd;
 		static std::mt19937 gen(rd());
-		myAssert(firstNum <= endNum);
+		myAssert(firstNum <= endNum,
+			"輸入值錯誤 firstNum: " + std::to_string(firstNum) + ", endNum: " + std::to_string(endNum));
 		std::uniform_int_distribution distrib(firstNum, endNum);
 		return distrib(gen);
 	}
-	void clearCmd(const short x, const short y, const short countX, const short countY, const bool firstOrEndUse) {
+	void clearCmd(const Point point, const Point countPoint, const bool firstOrEndUse) {
 		if (firstOrEndUse) {
 			system("cls");
 		}
 		else {
-			myAssert(0 <= x && 0 <= y && 0 <= countX && 0 <= countY);
-			std::string spaceText = std::string(1 + countX, ' ');
-			for (short i = 0;i <= countY;i++) {
-				myCout(spaceText, x, y + i);
+			myAssert(0 <= point.x && 0 <= point.y && 0 <= countPoint.x && 0 <= countPoint.y,
+				"輸入值錯誤 point.x: " + std::to_string(point.x) + ", point.y: " + std::to_string(point.y) +
+				"\n輸入值錯誤 countPoint.x: " + std::to_string(countPoint.x) + ", countPoint.y: " + std::to_string(countPoint.y));
+			std::string spaceText = std::string(1 + countPoint.x, ' ');
+			for (short i = 0;i <= countPoint.y;i++) {
+				myCout(spaceText, { point.x, safe_cast<short>(point.y + i )});
 			}
 		}
 	}
@@ -606,8 +618,8 @@ namespace myTool {
 		CursorBitset cb(csrBit);
 		cursorBox.set(cb.getState(), cb.getOneClick(), cb.getDoubleClick(),
 			cb.getLeftPressed(), cb.getRightPressed());
-		cursorBox.setPosition(cb.getPositionX(), cb.getPositionY());
-		cursorBox.setEvent(cb.getEventX(), cb.getEventY());
+		cursorBox.setPosition({ cb.getPositionX(), cb.getPositionY() });
+		cursorBox.setEvent({ cb.getEventX(), cb.getEventY() });
 	}
 	void resetCursor() {
 		csrBit.reset();
