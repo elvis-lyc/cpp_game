@@ -1,6 +1,7 @@
 ﻿#include "myTool.hpp"
 #include "snake.hpp"
 #include <string>
+#include <vector>
 
 namespace snake {
 	namespace {
@@ -17,19 +18,19 @@ namespace snake {
 			應同時存在多少食物: _foodCount
 			地圖總格數 與 最大得分數:_mapArea = _row * _column, _maxScore = _mapArea - 1
 			操作方式(WASD(true) 或 方向鍵(false)): _useWASD
+			遊戲平移格數(水平 和 垂直): _tabColumn, _tabRow
 			*/
 			short _column = 10, _row = 10, _moveWaitTime = 500,
 				_LShiftWaitTime = 250, _foodCount = 2,
-				_mapArea = _row * _column, _maxScore = _mapArea - 1;
+				_mapArea = _row * _column, _maxScore = _mapArea - 1,
+				_tabColumn = 0, _tabRow = 0;
 			bool _useWASD = true;
 			/*
 			上下限定義、常數:
-			部分邏輯依 遊戲設定 類推
-			遊戲平移格數(水平 和 垂直): _tabColumn, _tabRow
+			邏輯依 遊戲設定 類推
 			*/
 			const short _minColumn = 1, _maxColumn = 30, _minRow = 1, _maxRow = 30,
-				_minWaitTime = 200, _maxWaitTime = 1000, _minFoodCount = 1, _maxFoodCount = 10,
-				_tabColumn = 0, _tabRow = 0;
+				_minWaitTime = 200, _maxWaitTime = 1000, _minFoodCount = 1, _maxFoodCount = 10;
 		public:
 			short getColumn() const{
 				return _column;
@@ -142,15 +143,14 @@ namespace snake {
 			Node* _root = nullptr;
 
 			/*
-			{預計以 std::vector 來優化}
-			食物位置指標
+			食物位置容器
 			*/
-			Node* _foodBox[10] = { nullptr };
+			std::vector<Node*> _foodBox;
 
 			/*
-			_maxFoodCount 與 _foodBox[] 配合，儲存果子應持的數量與避免索引溢出
+			_score紀錄當前得分
 			*/
-			short _maxFoodCount = 0, _score = 0;
+			short _score = 0;
 
 			/*
 			移動方向:
@@ -200,18 +200,19 @@ namespace snake {
 				remainingIndex--;
 
 				/*
-				初始化 最大可生成的食物數 並確保其不會大於 地圖剩餘可使用格子數(maxScore);
-				檢查 _maxFoodCount 確保其不會超過 Setting._maxFoodCount(10);
+				初始化 最大可生成的食物數(maxFoodCount) 並確保其不會大於 地圖剩餘可使用格子數(maxScore);
 				*/
-				_maxFoodCount = (setting.getMaxScore() < setting.getFoodCount()) ? setting.getMaxScore() : setting.getFoodCount();
-				myTool::myAssert(_maxFoodCount <= 10,
-					"輸入值錯誤 _maxFoodCount: " + std::to_string(_maxFoodCount));
+				short maxFoodCount = (setting.getMaxScore() < setting.getFoodCount()) ? setting.getMaxScore() : setting.getFoodCount();
+				myTool::myAssert(maxFoodCount <= 10,
+					"輸入值錯誤 _maxFoodCount: " + std::to_string(maxFoodCount));
 
 				/*
 				依照_maxFoodCount數量生成食物
 				*/
 				Point food;
-				for (short i = 0, randIndex = 0;i < _maxFoodCount;i++) {
+				short randIndex = 0;
+				_foodBox = std::vector<Node*>(maxFoodCount, nullptr);
+				for (auto& node : _foodBox) {
 					/*
 					隨機取一值(索引值);
 					確保randIndex索引值是可用的;
@@ -221,11 +222,11 @@ namespace snake {
 
 					/*
 					建立食物座標;
-					並初始化至 _foodBox[i];
+					並初始化至 node : _foodBox;
 					將食物顯示於 cmd;
 					*/
 					food = { safe_cast<short>(randIndex % setting.getColumn()), safe_cast<short>(randIndex / setting.getColumn()) };
-					_foodBox[i] = new Node(food);
+					node = new Node(food);
 					myTool::myCout("● ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (food.x * 2)),
 						safe_cast<short>(setting.getTabRow() + 3 + food.y)
@@ -268,15 +269,12 @@ namespace snake {
 				tree.deleteTree();
 
 				/*
-				清除食物結構所佔資源
+				清除食物容器所佔資源
 				*/
-				for (short i = 0;i < _maxFoodCount;i++) {
-					if (_foodBox[i] == nullptr) {
-						continue;
-					}
-					delete(_foodBox[i]);
-					_foodBox[i] = nullptr;
+				for (auto& node : _foodBox) {
+					delete node;
 				}
+				_foodBox.clear();
 			}
 
 			/*
@@ -390,7 +388,7 @@ namespace snake {
 				*/
 				Node* temp = _root;
 				while (temp->next != nullptr) {
-					if (temp->point.x == nextPoint.x && temp->point.y == nextPoint.y) {
+					if (temp->point == nextPoint) {
 						return 3;
 					}
 					else {
@@ -516,7 +514,7 @@ namespace snake {
 				/*
 				檢查是否 撞牆、咬到自己(遊戲結束)
 				*/
-				Point nextPoint = { safe_cast<short>(_root->point.x + _move.x), safe_cast<short>(_root->point.y + _move.y) };
+				Point nextPoint = _root->point + _move;
 				if (willGameOver(setting, willSnakeDie(setting, nextPoint))) {
 					return false;
 				}
@@ -524,8 +522,8 @@ namespace snake {
 				/*
 				檢查蛇是否有吃到食物
 				*/
-				for (short i = 0;i < _maxFoodCount;i++) {
-					if (_foodBox[i] == nullptr) {
+				for (auto& node : _foodBox) {
+					if (node == nullptr) {
 						continue;
 					}
 
@@ -533,10 +531,10 @@ namespace snake {
 					檢查蛇下一步上是否有食物
 					並顯示新畫面
 					*/
-					if (_foodBox[i]->point.x == nextPoint.x && _foodBox[i]->point.y == nextPoint.y) {
-						_foodBox[i]->next = _root;
-						_root = _foodBox[i];
-						_foodBox[i] = nullptr;
+					if (node->point == nextPoint) {
+						node->next = _root;
+						_root = node;
+						node = nullptr;
 						myTool::myCout("● ", {
 							safe_cast<short>(setting.getTabColumn() + 2 + (_root->point.x * 2)),
 							safe_cast<short>(setting.getTabRow() + 3 + _root->point.y)
@@ -555,7 +553,7 @@ namespace snake {
 							short randIndex = myTool::myRand(0, remainingIndex);
 							tree.findCanUseIndex(randIndex);
 							tempPoint = { safe_cast<short>(randIndex % setting.getColumn()),  safe_cast<short>(randIndex / setting.getColumn()) };
-							_foodBox[i] = new Node(tempPoint);
+							node = new Node(tempPoint);
 							myTool::myCout("● ", {
 								safe_cast<short>(setting.getTabColumn() + 2 + (tempPoint.x * 2)),
 								safe_cast<short>(setting.getTabRow() + 3 + tempPoint.y)
