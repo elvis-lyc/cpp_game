@@ -4,10 +4,23 @@
 #include <string>
 #include <limits>
 namespace myTool {
+	/*
+	自訂static_cast並加入條件判斷
+	*/
+	template<typename T, typename F>
+	T safe_cast(F value);
+
 	struct Point {
 		short x = 0, y = 0;
 		Point() = default;
 		Point(const short inX, const short inY) :x(inX), y(inY) {}
+
+		bool operator==(const Point other) {
+			return this->x == other.x && this->y == other.y;
+		}
+		Point operator+(const Point other) {
+			return { safe_cast<short>(this->x + other.x),safe_cast<short>(this->y + other.y) };
+		}
 	};
 
 	class Tree {
@@ -58,12 +71,6 @@ namespace myTool {
 	*/
 	void myAssert(const bool condition, const std::string& errorText,
 		const std::source_location& loc = std::source_location::current());
-
-	/*
-	自訂static_cast並加入條件判斷
-	*/
-	template<typename T, typename F>
-	T safe_cast(F value);
 
 	/*
 	設定 Cmd 光標位置
