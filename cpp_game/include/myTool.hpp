@@ -15,7 +15,7 @@ namespace myTool {
 		Point() = default;
 		Point(const short inX, const short inY) :x(inX), y(inY) {}
 
-		bool operator==(const Point other) {
+		bool operator==(const Point other) const{
 			return this->x == other.x && this->y == other.y;
 		}
 		Point operator+(const Point other) {
@@ -31,12 +31,18 @@ namespace myTool {
 			Node(const short inData):data(inData){}
 		};
 		Node* _root = nullptr;
+
 		void deleteTree_temp(Tree::Node* node);
 		void findCanUseIndex_temp(Tree::Node* node, short& index);
 	public:
+		Tree() = default;
+		~Tree() {
+			this->deleteTree();
+		}
+
+		void deleteTree();
 		void insert(const short data);
 		void remove(const short data);
-		void deleteTree();
 		void findCanUseIndex(short& index);
 	};
 
