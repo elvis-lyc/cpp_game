@@ -2,6 +2,8 @@
 #include "snake.hpp"
 #include <string>
 #include <vector>
+#include <memory>
+#include <utility>
 
 namespace snake {
 	namespace {
@@ -128,7 +130,8 @@ namespace snake {
 			*/
 			struct Node {
 				Point point;
-				Node* next = nullptr;
+				std::unique_ptr<Node> next = nullptr;
+
 				Node() = default;
 				Node(Point input) :point{ input } {}
 				void setXY(const Point input) {
@@ -140,12 +143,12 @@ namespace snake {
 			/*
 			蛇頭指標
 			*/
-			Node* _root = nullptr;
+			std::unique_ptr<Node> _root = nullptr;
 
 			/*
 			食物位置容器
 			*/
-			std::vector<Node*> _foodBox;
+			std::vector<std::unique_ptr<Node>> _foodBox;
 
 			/*
 			_score紀錄當前得分
@@ -184,7 +187,7 @@ namespace snake {
 				myTool::myAssert(0 <= head.x && head.x < setting.getColumn() &&
 					0 <= head.y && head.y < setting.getRow(),
 					"輸入值錯誤 head.x: " + std::to_string(head.x) + ", head.y: " + std::to_string(head.y));
-				_root = new Node(head);
+				_root = std::make_unique<Node>(head);
 				myTool::myCout("● ", {
 					safe_cast<short>(setting.getTabColumn() + 2 + (head.x * 2)),
 					safe_cast<short>(setting.getTabRow() + 3 + head.y)
@@ -211,7 +214,7 @@ namespace snake {
 				*/
 				Point food;
 				short randIndex = 0;
-				_foodBox = std::vector<Node*>(maxFoodCount, nullptr);
+				_foodBox = std::vector<std::unique_ptr<Node>>(maxFoodCount);
 				for (auto& node : _foodBox) {
 					/*
 					隨機取一值(索引值);
@@ -226,7 +229,7 @@ namespace snake {
 					將食物顯示於 cmd;
 					*/
 					food = { safe_cast<short>(randIndex % setting.getColumn()), safe_cast<short>(randIndex / setting.getColumn()) };
-					node = new Node(food);
+					node = std::make_unique<Node>(food);
 					myTool::myCout("● ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (food.x * 2)),
 						safe_cast<short>(setting.getTabRow() + 3 + food.y)
@@ -244,37 +247,6 @@ namespace snake {
 				避免殘留按鍵紀錄導致開局就暫停
 				*/
 				myTool::resetKeyInput();
-			}
-
-			/*
-			清除所佔用資源
-			*/
-			void deleteSnakeGame(Tree& tree) {
-				/*
-				清除蛇串列所佔資源
-				*/
-				if (_root != nullptr) {
-					Node* temp = nullptr;
-					do {
-						temp = _root->next;
-						delete(_root);
-						_root = temp;
-					} while (_root != nullptr);
-					_root = nullptr;
-				}
-
-				/*
-				清除Tree所佔資源
-				*/
-				tree.deleteTree();
-
-				/*
-				清除食物容器所佔資源
-				*/
-				for (auto& node : _foodBox) {
-					delete node;
-				}
-				_foodBox.clear();
 			}
 
 			/*
@@ -386,13 +358,13 @@ namespace snake {
 				/*
 				檢查是否咬到自己
 				*/
-				Node* temp = _root;
+				const Node* temp = _root.get();
 				while (temp->next != nullptr) {
 					if (temp->point == nextPoint) {
 						return 3;
 					}
 					else {
-						temp = temp->next;
+						temp = temp->next.get();
 					}
 				}
 
@@ -532,8 +504,8 @@ namespace snake {
 					並顯示新畫面
 					*/
 					if (node->point == nextPoint) {
-						node->next = _root;
-						_root = node;
+						node->next = std::move(_root);
+						_root = std::move(node);
 						node = nullptr;
 						myTool::myCout("● ", {
 							safe_cast<short>(setting.getTabColumn() + 2 + (_root->point.x * 2)),
@@ -553,7 +525,7 @@ namespace snake {
 							short randIndex = myTool::myRand(0, remainingIndex);
 							tree.findCanUseIndex(randIndex);
 							tempPoint = { safe_cast<short>(randIndex % setting.getColumn()),  safe_cast<short>(randIndex / setting.getColumn()) };
-							node = new Node(tempPoint);
+							node = std::make_unique<Node>(tempPoint);
 							myTool::myCout("● ", {
 								safe_cast<short>(setting.getTabColumn() + 2 + (tempPoint.x * 2)),
 								safe_cast<short>(setting.getTabRow() + 3 + tempPoint.y)
@@ -574,7 +546,7 @@ namespace snake {
 				未吃到食物(正常移動)
 				並顯示新畫面
 				*/
-				Node* temp = _root;
+				Node* temp = _root.get();
 				if (temp->next == nullptr) {
 					tree.remove(temp->point.x + (temp->point.y * setting.getColumn()));
 					myTool::myCout("  ", {
@@ -589,7 +561,7 @@ namespace snake {
 				}
 				else {
 					while (temp->next->next != nullptr) {
-						temp = temp->next;
+						temp = temp->next.get();
 					}
 					tree.remove(temp->next->point.x + (temp->next->point.y * setting.getColumn()));
 					myTool::myCout("  ", {
@@ -599,8 +571,8 @@ namespace snake {
 						safe_cast<short>(setting.getTabColumn() + 2 + (_root->point.x * 2)),
 						safe_cast<short>(setting.getTabRow() + 3 + _root->point.y)
 						}, 2);
-					temp->next->next = _root;
-					_root = temp->next;
+					temp->next->next = std::move(_root);
+					_root = std::move(temp->next);
 					temp->next = nullptr;
 					_root->point = { nextPoint };
 					tree.insert(_root->point.x + (_root->point.y * setting.getColumn()));
@@ -612,6 +584,20 @@ namespace snake {
 				return true;
 			}
 		public:
+			SnakeGame() = default;
+			/*
+			清除所佔用資源
+			*/
+			~SnakeGame() {
+				/*
+				清除蛇串列所佔資源
+				*/
+				while (_root != nullptr) {
+					_root = std::move(_root->next);
+				}
+				_root = nullptr;
+			}
+
 			/*
 			外部接口
 			*/
@@ -619,11 +605,9 @@ namespace snake {
 				/*
 				初始化資源;
 				遊戲主循環;
-				釋放資源;
 				*/
 				initSnakeGame(setting, tree, remainingIndex);
 				while (snakeMove(setting, tree, remainingIndex));
-				deleteSnakeGame(tree);
 			}
 		};
 		/*
