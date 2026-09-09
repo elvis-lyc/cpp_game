@@ -226,6 +226,8 @@ namespace snake {
 					*/
 					tree.insert(randIndex);
 					remainingIndex--;
+
+					myTool::mySleep(100);
 				}
 
 				/*
@@ -347,8 +349,8 @@ namespace snake {
 				/*
 				檢查是否咬到自己
 				*/
-				for (const auto& const point : _root) {
-					if (point == nextPoint) {
+				for (const auto& point : _root) {
+					if (point == nextPoint && point != *_root.rbegin()) {
 						return 3;
 					}
 				}
@@ -480,6 +482,10 @@ namespace snake {
 				檢查蛇是否有吃到食物
 				*/
 				for (auto& point : _foodBox) {
+					if (point == Point{-1, -1}) {
+						continue;
+					}
+
 					/*
 					檢查蛇下一步上是否有食物
 					並顯示新畫面
@@ -512,6 +518,9 @@ namespace snake {
 							tree.insert(randIndex);
 							remainingIndex--;
 						}
+						else {
+							point = { -1,-1 };
+						}
 						_score++;
 						myTool::myCout(std::to_string(_score), {
 							safe_cast<short>(setting.getTabColumn() + 4 + (setting.getColumn() * 2) + 10),
@@ -525,13 +534,13 @@ namespace snake {
 				未吃到食物(正常移動)
 				並顯示新畫面
 				*/
-				Point temp = _root[0];
 				if (_root.size() == 1) {
+					Point& temp = _root[0];
 					tree.remove(temp.x + (temp.y * setting.getColumn()));
 					myTool::myCout("  ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (temp.x * 2)),
 						safe_cast<short>(setting.getTabRow() + 3 + temp.y) });
-					temp = { nextPoint };
+					temp = nextPoint;
 					tree.insert(temp.x + (temp.y * setting.getColumn()));
 					myTool::myCout("● ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (temp.x * 2)),
@@ -539,7 +548,7 @@ namespace snake {
 						}, 1);
 				}
 				else {
-					temp = *_root.rbegin();
+					Point& temp = *_root.rbegin();
 					tree.remove(temp.x + (temp.y * setting.getColumn()));
 					myTool::myCout("  ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (temp.x * 2)),
@@ -549,7 +558,7 @@ namespace snake {
 						safe_cast<short>(setting.getTabRow() + 3 + _root[0].y)
 						}, 2);
 					std::rotate(_root.rbegin(), _root.rbegin() + 1, _root.rend());
-					_root[0] = {nextPoint};
+					_root[0] = nextPoint;
 					tree.insert(_root[0].x + (_root[0].y * setting.getColumn()));
 					myTool::myCout("● ", {
 						safe_cast<short>(setting.getTabColumn() + 2 + (_root[0].x * 2)),
